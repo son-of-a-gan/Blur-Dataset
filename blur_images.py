@@ -26,8 +26,8 @@ class BlurImage(object):
             self.shape = self.original.shape
             if len(self.shape) < 3:
                 raise Exception('We support only RGB images yet.')
-            elif self.shape[0] != self.shape[1]:
-                raise Exception('We support only square images yet.')
+            # elif self.shape[0] != self.shape[1]:
+                # raise Exception('We support only square images yet.')
         else:
             raise Exception('Not correct path to image.')
         self.path_to_save = path__to_save
