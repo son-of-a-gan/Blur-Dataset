@@ -116,7 +116,8 @@ if __name__ == '__main__':
         folder_in = folder_in + '/'
 
     folder_out = folder_in[0:-1] + '_blurred/'
-    os.mkdir(folder_out)
+    if not os.path.exists(folder_out):
+        os.mkdir(folder_out)
 
     print ("\nINPUT:",folder_in)
     print ("OUTPUT:",folder_out,"\n") 
