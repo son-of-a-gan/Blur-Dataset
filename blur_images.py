@@ -106,7 +106,7 @@ def blur(args):
 
     # Blur images
     params = [0.01, 0.009, 0.008, 0.007, 0.005, 0.003]
-    trajectory = Trajectory(canvas=64, max_len=60, expl=np.random.choice(params)).fit()
+    trajectory = Trajectory(canvas=64, max_len=100, expl=np.random.choice(params)).fit()
 
     psf = PSF(canvas=64, trajectory=trajectory).fit()
 
