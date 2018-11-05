@@ -4,9 +4,11 @@ import cv2
 import os
 from scipy import signal
 from scipy import misc
-from motion_blur.generate_PSF import PSF
-from motion_blur.generate_trajectory import Trajectory
+from generate_PSF import PSF
+from generate_trajectory import Trajectory
 
+import sys
+import pdb
 
 class BlurImage(object):
 
@@ -108,13 +110,23 @@ class BlurImage(object):
 
 
 if __name__ == '__main__':
-    folder = '/Users/mykolam/PycharmProjects/University/DeblurGAN2/results_sharp'
-    folder_to_save = '/Users/mykolam/PycharmProjects/University/DeblurGAN2/blured'
+
+    folder_in = sys.argv[1]
+    if not folder_in[-1] == '/': 
+        folder_in = folder_in + '/'
+
+    folder_out = folder_in[0:-1] + '_blurred/'
+    os.mkdir(folder_out)
+
+    print ("\nINPUT:",folder_in)
+    print ("OUTPUT:",folder_out,"\n") 
+
     params = [0.01, 0.009, 0.008, 0.007, 0.005, 0.003]
-    for path in os.listdir(folder):
+    
+    for path in os.listdir(folder_in):
         print(path)
         trajectory = Trajectory(canvas=64, max_len=60, expl=np.random.choice(params)).fit()
         psf = PSF(canvas=64, trajectory=trajectory).fit()
-        BlurImage(os.path.join(folder, path), PSFs=psf,
-                  path__to_save=folder_to_save, part=np.random.choice([1, 2, 3])).\
+        BlurImage(os.path.join(folder_in, path), PSFs=psf,
+                  path__to_save=folder_out, part=np.random.choice([1, 2, 3])).\
             blur_image(save=True)
