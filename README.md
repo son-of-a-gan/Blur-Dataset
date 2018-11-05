@@ -2,10 +2,10 @@
 
 ## Usage
 ```
-python blur_images.py <path-to-image-folder>
+python blur_images.py <path-to-image-folder> <#-cores>
 ```
 
-## TODO:
+## TODO
 - Understand how this blurring actually works
 - Create blurred mapillary dataset
 - Experiment with new blur kernels

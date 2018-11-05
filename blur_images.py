@@ -47,6 +47,7 @@ class BlurImage(object):
         self.part = part
         self.result = []
 
+
     def blur_image(self, save=False, show=False):
         if self.part is None:
             psf = self.PSFs
@@ -56,48 +57,51 @@ class BlurImage(object):
         key, kex = self.PSFs[0].shape
         delta = yN - key
         assert delta >= 0, 'resolution of image should be higher than kernel'
+        
         result=[]
         if len(psf) > 1:
             for p in psf:
+
                 tmp = np.pad(p, delta // 2, 'constant')
                 cv2.normalize(tmp, tmp, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
                 # blured = np.zeros(self.shape)
                 blured = cv2.normalize(self.original, self.original, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX,
                                        dtype=cv2.CV_32F)
+                    
+                for i in range(3):
+                    blured[:, :, i] = cv2.filter2D(blured[:, :, i], -1, tmp)
 
-                blured[:, :, 0] = np.array(signal.fftconvolve(blured[:, :, 0], tmp, 'same'))
-                blured[:, :, 1] = np.array(signal.fftconvolve(blured[:, :, 1], tmp, 'same'))
-                blured[:, :, 2] = np.array(signal.fftconvolve(blured[:, :, 2], tmp, 'same'))
-                
                 blured = cv2.normalize(blured, blured, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
                 blured = cv2.cvtColor(blured, cv2.COLOR_RGB2BGR)
                 result.append(np.abs(blured))
+
         else:
+
             psf = psf[0]
             tmp = np.pad(psf, delta // 2, 'constant')
             cv2.normalize(tmp, tmp, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
             blured = cv2.normalize(self.original, self.original, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX,
                                    dtype=cv2.CV_32F)
 
-            blured[:, :, 0] = np.array(signal.fftconvolve(blured[:, :, 0], tmp, 'same'))
-            blured[:, :, 1] = np.array(signal.fftconvolve(blured[:, :, 1], tmp, 'same'))
-            blured[:, :, 2] = np.array(signal.fftconvolve(blured[:, :, 2], tmp, 'same'))
+            for i in range(3):
+                blured[:, :, i] = cv2.filter2D(blured[:, :, i], -1, tmp)
             
             blured = cv2.normalize(blured, blured, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
             blured = cv2.cvtColor(blured, cv2.COLOR_RGB2BGR)
             result.append(np.abs(blured))
+
         self.result = result
 
         if self.path_to_save is None:
-            raise Exception('Please create Trajectory instance with path_to_save')
+            raise Exception('Please create trajectory instance with path_to_save')
 
         cv2.imwrite(os.path.join(self.path_to_save, self.image_path.split('/')[-1]), self.result[0] * 255)
 
 
 def blur(args):
+
     # Unpack args
     img_path, folder_in, folder_out = args 
-
     print(img_path)
 
     # Blur images
@@ -106,16 +110,12 @@ def blur(args):
 
     psf = PSF(canvas=64, trajectory=trajectory).fit()
 
-    print ("Start Blur!")
-
     BlurImage(
         os.path.join(folder_in, img_path), 
         PSFs=psf, 
         path__to_save=folder_out, 
         part=np.random.choice([1, 2, 3])).\
             blur_image(save=True)
-
-    print ("End Blur!")
 
 
 if __name__ == '__main__':
@@ -133,23 +133,21 @@ if __name__ == '__main__':
 
     print ("\nINPUT:",folder_in)
     print ("OUTPUT:",folder_out,"\n") 
-
-    num_cores = multiprocessing.cpu_count()
     
-    Parallel(n_jobs=num_cores)(delayed(blur)(
-        [img_path, folder_in, folder_out]) for img_path in os.listdir(folder_in))
+    # Run in parallel
+    if len(sys.argv) > 2:
 
-    # params = [0.01, 0.009, 0.008, 0.007, 0.005, 0.003]
-    # for path in os.listdir(folder_in):
+        desired_cores = int(sys.argv[2])
+        assert desired_cores > 0
+        
+        num_cores = min(multiprocessing.cpu_count(), desired_cores)
+        print ("Using {} cores...".format(num_cores))
 
-    #     print(path)
+        Parallel(n_jobs=num_cores)(delayed(blur)(
+            [img_path, folder_in, folder_out]) for img_path in os.listdir(folder_in))
 
-    #     trajectory = Trajectory(canvas=64, max_len=60, expl=np.random.choice(params)).fit()
-    #     psf = PSF(canvas=64, trajectory=trajectory).fit()
+    # Run in Serial
+    else:
 
-    #     BlurImage(
-    #         os.path.join(folder_in, path), 
-    #         PSFs=psf, 
-    #         path__to_save=folder_out, 
-    #         part=np.random.choice([1, 2, 3])).\
-    #         blur_image(save=True)
+        for img_path in os.listdir(folder_in):
+            blur([img_path, folder_in, folder_out])
