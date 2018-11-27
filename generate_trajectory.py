@@ -4,7 +4,7 @@ from math import ceil
 
 
 class Trajectory(object):
-    def __init__(self, canvas=64, iters=2000, max_len=60, expl=None, path_to_save=None):
+    def __init__(self, canvas=64, iters=2000, expl=None, path_to_save=None):
         """
         Generates a variety of random motion trajectories in continuous domain as in [Boracchi and Foi 2012]. Each
         trajectory consists of a complex-valued vector determining the discrete positions of a particle following a
@@ -22,13 +22,23 @@ class Trajectory(object):
         :param expl: this param helps to define probability of big shake. Recommended expl = 0.005.
         :param path_to_save: where to save if you need.
         """
+        len_per_pix = 60/64 #a ratio that relates the trajectory length to the number of canvas pixels.  Default is 60/64
         self.canvas = canvas
         self.iters = iters
-        self.max_len = max_len
+        self.max_len = self.canvas*len_per_pix
         if expl is None:
             self.expl = 0.1 * np.random.uniform(0, 1)
         else:
-            self.expl = expl
+            # expl corresponds to how likely the trajectory is to change directions
+            #     if expl is large, then the trajectory is more likely to change directions
+            # 
+            # When the canvas is bigger, we want the trajectory to explore more of the canvas.
+            # To do that let's scale expl to be smaller as the canvas gets bigger.  This means
+            # the trajectory will be less likely to change directions as the canvas gets bigger,
+            # and thus the trajectory explores more of the canvas.  Truly genius.
+            
+            expl_scale = 64/self.canvas #The 64 is there because that's the default canvas size that the original expl values was selected for
+            self.expl = expl*expl_scale 
         if path_to_save is None:
             pass
         else:
@@ -45,8 +55,10 @@ class Trajectory(object):
         :param save: default False.
         :return: x (vector of motion).
         """
+
         tot_length = 0
         big_expl_count = 0
+
         # how to be near the previous position
         # TODO: I can change this paramether for 0.1 and make kernel at all image
         centripetal = 0.7 * np.random.uniform(0, 1)
@@ -83,7 +95,7 @@ class Trajectory(object):
             x[t + 1] = x[t] + v
             tot_length = tot_length + abs(x[t + 1] - x[t])
 
-        # centere the motion
+        # center the motion
         x += complex(real=-np.min(x.real), imag=-np.min(x.imag))
         x = x - complex(real=x[0].real % 1., imag=x[0].imag % 1.) + complex(1, 1)
         x += complex(real=ceil((self.canvas - max(x.real)) / 2), imag=ceil((self.canvas - max(x.imag)) / 2))

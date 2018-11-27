@@ -56,6 +56,7 @@ class BlurImage(object):
         yN, xN, channel = self.shape
         key, kex = self.PSFs[0].shape
         delta = yN - key
+        print(delta)
         assert delta >= 0, 'resolution of image should be higher than kernel'
         
         result=[]
@@ -65,9 +66,7 @@ class BlurImage(object):
                 tmp = np.pad(p, delta // 2, 'constant')
                 cv2.normalize(tmp, tmp, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
                 # blured = np.zeros(self.shape)
-                blured = cv2.normalize(self.original, self.original, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX,
-                                       dtype=cv2.CV_32F)
-                    
+                blured = cv2.normalize(self.original, self.original, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F) 
                 for i in range(3):
                     blured[:, :, i] = cv2.filter2D(blured[:, :, i], -1, tmp)
 
@@ -105,10 +104,12 @@ def blur(args):
     print(img_path)
 
     # Blur images
-    params = [0.01, 0.009, 0.008, 0.007, 0.005, 0.003]
-    trajectory = Trajectory(canvas=64, max_len=60, expl=np.random.choice(params)).fit()
+    canvas_size = 640 #Crank this value for more blur!!!
 
-    psf = PSF(canvas=64, trajectory=trajectory).fit()
+    params = [0.01, 0.009, 0.008, 0.007, 0.005, 0.003]
+    trajectory = Trajectory(canvas=canvas_size, expl=np.random.choice(params)).fit(show=True) #UPDATED: I removed the max_len parameter.  It is now a function of canvas size. I wanted it to scale without having people think about it. -David 2
+
+    psf = PSF(canvas=canvas_size, trajectory=trajectory).fit()
 
     BlurImage(
         os.path.join(folder_in, img_path), 
