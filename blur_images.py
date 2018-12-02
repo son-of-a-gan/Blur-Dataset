@@ -56,7 +56,6 @@ class BlurImage(object):
         yN, xN, channel = self.shape
         key, kex = self.PSFs[0].shape
         delta = yN - key
-        print(delta)
         assert delta >= 0, 'resolution of image should be higher than kernel'
         
         result=[]
@@ -100,12 +99,10 @@ class BlurImage(object):
 def blur(args):
 
     # Unpack args
-    img_path, folder_in, folder_out = args 
+    img_path, folder_in, folder_out, canvas_size = args #Crank the canvas_size value for more blur!!!
     print(img_path)
 
     # Blur images
-    canvas_size = 640 #Crank this value for more blur!!!
-
     params = [0.01, 0.009, 0.008, 0.007, 0.005, 0.003]
     trajectory = Trajectory(canvas=canvas_size, expl=np.random.choice(params)).fit(show=True) #UPDATED: I removed the max_len parameter.  It is now a function of canvas size. I wanted it to scale without having people think about it. -David 2
 
@@ -128,27 +125,32 @@ if __name__ == '__main__':
     if not os.path.exists(folder_in):
         raise Exception('Dude, that\'s not a real folder')
 
-    folder_out = folder_in[0:-1] + '_blurred/'
-    if not os.path.exists(folder_out):
-        os.mkdir(folder_out)
-
     print ("\nINPUT:",folder_in)
-    print ("OUTPUT:",folder_out,"\n") 
+
+    kernel_sizes = [160, 320, 480, 640]
     
     # Run in parallel
-    if len(sys.argv) > 2:
+    for k in kernel_sizes:
 
-        desired_cores = int(sys.argv[2])
-        assert desired_cores > 0
-        
-        num_cores = min(multiprocessing.cpu_count(), desired_cores)
-        print ("Using {} cores...".format(num_cores))
+      folder_out = folder_in[0:-1] + '_blurred_' +str(k) +'/'
+      if not os.path.exists(folder_out):
+        os.mkdir(folder_out)
 
-        Parallel(n_jobs=num_cores)(delayed(blur)(
-            [img_path, folder_in, folder_out]) for img_path in os.listdir(folder_in))
+      print ("OUTPUT:",folder_out,"\n") 
 
-    # Run in Serial
-    else:
+      if len(sys.argv) > 2:
 
-        for img_path in os.listdir(folder_in):
-            blur([img_path, folder_in, folder_out])
+          desired_cores = int(sys.argv[2])
+          assert desired_cores > 0
+          
+          num_cores = min(multiprocessing.cpu_count(), desired_cores)
+          print ("Using {} cores...".format(num_cores))
+
+          Parallel(n_jobs=num_cores)(delayed(blur)(
+              [img_path, folder_in, folder_out, k]) for img_path in os.listdir(folder_in))
+
+      # Run in Serial
+      else:
+
+          for img_path in os.listdir(folder_in):
+              blur([img_path, folder_in, folder_out, k])
